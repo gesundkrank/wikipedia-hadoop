@@ -19,7 +19,6 @@
 package de.gesundkrank.wikipedia.hadoop.io;
 
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -29,14 +28,13 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
-public class WikidumpLoader {
+public class WikiDumpLoader {
     private final static String dumpUrl =
             "http://dumps.wikimedia.org/%swiki/latest/%swiki-latest-pages-articles.xml.bz2";
 
@@ -44,10 +42,10 @@ public class WikidumpLoader {
     private final Logger logger;
 
     /**
-     * Default constructor uses {@link WikidumpLoader#WikidumpLoader(boolean)} with checkNew
+     * Default constructor uses {@link WikiDumpLoader#WikiDumpLoader(boolean)} with checkNew
      * set true
      */
-    public WikidumpLoader() {
+    public WikiDumpLoader() {
         this(true);
     }
 
@@ -57,7 +55,7 @@ public class WikidumpLoader {
      * @param checkNew if false its not checked if a new version exists and
      *                 no new dump is downloaded
      */
-    public WikidumpLoader(boolean checkNew) {
+    public WikiDumpLoader(boolean checkNew) {
         this.checkNew = checkNew;
         this.logger = Logger.getLogger(getClass());
     }
@@ -66,34 +64,40 @@ public class WikidumpLoader {
      * Adds input path of latest english wikipedia dump
      *
      * @param job
-     * @param basepathStr
+     * @param basePathStr
      * @throws java.io.IOException
      */
-    public void addWikidump(Job job, String basepathStr) throws IOException {
-        addWikidump(job, basepathStr, Locale.ENGLISH);
+    public void addWikiDump(Job job, String basePathStr) throws IOException {
+        addWikiDump(job, basePathStr, Locale.ENGLISH);
     }
 
     /**
      * Adds inputpath to a given hadoop job
      *
      * @param job         hadoop job
-     * @param basepathStr
+     * @param basePathStr
      * @param locale      Language of the wikidump
      * @throws java.io.IOException
      */
-    public void addWikidump(Job job, String basepathStr, Locale locale) throws IOException {
-        Path basepath = new Path(basepathStr, locale.getLanguage());
+    public void addWikiDump(Job job, String basePathStr, Locale locale) throws IOException {
+        Path basePath = new Path(basePathStr, locale.getLanguage());
         FileSystem fs = FileSystem.get(job.getConfiguration());
-        FileStatus latestLocalDumpStatus = checkLocalDumps(fs, basepath);
+        FileStatus latestLocalDumpStatus = checkLocalDumps(fs, basePath);
         Path latestDump = null;
-        if (latestLocalDumpStatus != null)
+        if (latestLocalDumpStatus != null) {
             latestDump = latestLocalDumpStatus.getPath();
+        } else {
+            logger.info("Could not find a valid dump. Loading new version.");
+        }
 
-        if (checkNew) {
+
+        if (checkNew || latestDump == null) {
             long latestDumpTime = checkNewDump(locale);
-            if (latestLocalDumpStatus == null ||
-                    latestDumpTime > latestLocalDumpStatus.getModificationTime())
-                latestDump = loadNewDump(fs, basepath, latestDumpTime, locale);
+            if (latestLocalDumpStatus == null || latestDumpTime > latestLocalDumpStatus.getModificationTime()) {
+                latestDump = loadNewDump(fs, basePath, latestDumpTime, locale);
+            } else {
+                throw new IOException("failed to get latest dump");
+            }
         }
 
         FileInputFormat.addInputPath(job, latestDump);
@@ -105,21 +109,16 @@ public class WikidumpLoader {
      * @param locale Language of wikidump
      * @return
      */
-    private long checkNewDump(Locale locale) {
+    private long checkNewDump(Locale locale) throws IOException {
         try {
             String localeDumpUrl = String.format(dumpUrl, locale.getLanguage(), locale.getLanguage());
             URLConnection connection = new URL(localeDumpUrl).openConnection();
             String lastModified = connection.getHeaderField("Last-Modified");
-            long latestDump = new SimpleDateFormat("E, d MMM yyyy HH:mm:ss Z", Locale.ENGLISH)
+            return new SimpleDateFormat("E, d MMM yyyy HH:mm:ss Z", Locale.ENGLISH)
                     .parse(lastModified).getTime();
-            return latestDump;
-        } catch (IOException e) {
-            logger.error(e);
         } catch (ParseException e) {
-            logger.error(e);
+            throw new IOException(e);
         }
-        return 0;
-
     }
 
     /**
@@ -156,42 +155,30 @@ public class WikidumpLoader {
     /**
      * Loads new dump and unpack it into hdfs
      *
-     * @param fs
-     * @param basepath
+     * @param fs  HDFS
+     * @param basePath
      * @param time
      * @return
      * @throws java.io.IOException
      */
-    private Path loadNewDump(FileSystem fs, Path basepath, long time, Locale locale) throws IOException {
+    private Path loadNewDump(FileSystem fs, Path basePath, long time, Locale locale) throws IOException {
         System.out.println("loading new dump");
         String localeDumpUrl = String.format(dumpUrl, locale.getLanguage(), locale.getLanguage());
         URLConnection connection = new URL(localeDumpUrl).openConnection();
-        InputStream in = connection.getInputStream();
-        BZip2CompressorInputStream bzIn = new BZip2CompressorInputStream(in);
 
-        String fileName = String.format("%swiki-latest-pages-articles.%d.xml", locale.getLanguage(), time);
-        Path path = new Path(basepath, fileName);
-        FSDataOutputStream outputStream = fs.create(path);
+        try (BZip2CompressorInputStream bzIn = new BZip2CompressorInputStream(connection.getInputStream())) {
+            String fileName = String.format("%swiki-latest-pages-articles.%d.xml", locale.getLanguage(), time);
+            Path path = new Path(basePath, fileName);
+            FSDataOutputStream outputStream = fs.create(path);
 
-        final byte[] buffer = new byte[1024];
-        int n;
-        while (-1 != (n = bzIn.read(buffer))) {
-            outputStream.write(buffer, 0, n);
+            final byte[] buffer = new byte[1024];
+            int n;
+            while (-1 != (n = bzIn.read(buffer))) {
+                outputStream.write(buffer, 0, n);
+            }
+
+            return path;
         }
-
-        outputStream.close();
-        bzIn.close();
-
-        return path;
-    }
-
-    public static void main(String[] args) throws IOException {
-        WikidumpLoader dump = new WikidumpLoader();
-        Configuration conf = new Configuration();
-        String namenode = "hdfs://webis70.medien.uni-weimar.de:8020";
-        conf.set("fs.default.name", namenode);
-        Job job = new Job(conf);
-        dump.addWikidump(job, "wikidumps", Locale.GERMAN);
     }
 
 }

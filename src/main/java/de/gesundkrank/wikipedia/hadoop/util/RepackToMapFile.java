@@ -20,7 +20,7 @@ package de.gesundkrank.wikipedia.hadoop.util;
 
 import de.gesundkrank.wikipedia.hadoop.WikiPageWritable;
 import de.gesundkrank.wikipedia.hadoop.inputformat.WikiInputFormat;
-import de.gesundkrank.wikipedia.hadoop.io.WikidumpLoader;
+import de.gesundkrank.wikipedia.hadoop.io.WikiDumpLoader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -63,8 +63,8 @@ public class RepackToMapFile extends Configured implements Tool {
         job.setOutputValueClass(WikiPageWritable.class);
 
 
-        WikidumpLoader wikidumpLoader = new WikidumpLoader(false);
-        wikidumpLoader.addWikidump(job, "wikidumps");
+        WikiDumpLoader wikiDumpLoader = new WikiDumpLoader(false);
+        wikiDumpLoader.addWikiDump(job, "wikidumps");
 
         MapFileOutputFormat.setOutputPath(job, new Path("wikipedia-mapfile"));
 
