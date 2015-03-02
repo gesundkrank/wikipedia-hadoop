@@ -24,10 +24,7 @@ import org.apache.commons.lang3.StringEscapeUtils;
 
 import javax.xml.bind.DatatypeConverter;
 import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,8 +32,7 @@ import java.util.regex.Pattern;
  * @author Jan Graßegger<jan.grassegger@uni-weimar.de>
  */
 public class WikiPageParser {
-    public static final String PAGESTART = "<page>";
-
+    public static final String PAGE_START = "<page>";
     private static final char NEWLINE = '\n';
 
     private static final Pattern titlePattern =
@@ -77,7 +73,6 @@ public class WikiPageParser {
     public WikiPageWritable readNextPage(BufferedReader in)
             throws IOException {
 
-//		numBytesRead = 0;
         boolean foundTitle = false;
         boolean foundId = false;
         boolean foundRedirect = false;
@@ -86,7 +81,7 @@ public class WikiPageParser {
         String line;
 
         while ((line = in.readLine()) != null) {
-            if (line.trim().startsWith(PAGESTART))
+            if (line.trim().startsWith(PAGE_START))
                 break;
         }
 
@@ -149,7 +144,7 @@ public class WikiPageParser {
         return revision;
     }
 
-    public void readNextRevision(WikiPageWritable.WikiPageRevision revision, BufferedReader in) throws IOException{
+    public void readNextRevision(WikiPageWritable.WikiPageRevision revision, BufferedReader in) throws IOException {
 
         String line;
         boolean foundRevisionId = false;
@@ -191,7 +186,6 @@ public class WikiPageParser {
 
                 WikiPageWritable.WikiPageRevision.WikiPageContributor contributor = revision.getContributor();
                 do {
-
                     //username
                     if (!foundUsername) {
                         String username = matchUsername(line);
@@ -201,7 +195,6 @@ public class WikiPageParser {
                             continue;
                         }
                     }
-
 
                     //contr_id
                     if (!foundContributorId) {
@@ -213,10 +206,9 @@ public class WikiPageParser {
                         }
                     }
 
-
-                    if (matchContributorEnd(line))
+                    if (matchContributorEnd(line)) {
                         break;
-
+                    }
                 } while ((line = in.readLine()) != null);
 
                 revision.setContributor(contributor);
@@ -255,17 +247,17 @@ public class WikiPageParser {
                         line = StringEscapeUtils.unescapeXml(line);
 
                         text.append(line).append(NEWLINE);
-                    } while ((line = in.readLine()) != null);
+                        line = in.readLine();
+                    } while (line != null);
                     revision.setText(text.toString());
                     continue;
                 }
             }
 
             Matcher revisionEndMatcher = revisionEndPattern.matcher(line);
-            if (revisionEndMatcher.matches())
+            if (revisionEndMatcher.matches()) {
                 break;
-
-
+            }
         }
     }
 
@@ -343,26 +335,7 @@ public class WikiPageParser {
         return isMinorMatcher.matches();
     }
 
-
     public long getCurrentNumBytesRead() {
         return numBytesRead;
-    }
-
-    public static void main(String[] args) throws IOException {
-        FileInputStream wikipedia = new FileInputStream("/home/moji8208/wikipedia/de/dewiki-latest-pages-articles.1370244398000.xml");
-        DataInputStream stream = new DataInputStream(wikipedia);
-
-        WikiPageParser parser = new WikiPageParser();
-
-        WikiPageWritable page;
-        do{
-
-            page = parser.readNextPage(new BufferedReader(new InputStreamReader(stream)));
-
-
-            System.out.println(page.getTitle()+" "+page.getReversedURL("de"));
-
-
-        }while (page!=null);
     }
 }

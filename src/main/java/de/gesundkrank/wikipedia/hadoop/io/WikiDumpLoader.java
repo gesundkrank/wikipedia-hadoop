@@ -35,7 +35,7 @@ import java.text.SimpleDateFormat;
 import java.util.Locale;
 
 public class WikiDumpLoader {
-    private final static String dumpUrl =
+    private static final String DUMP_URL =
             "http://dumps.wikimedia.org/%swiki/latest/%swiki-latest-pages-articles.xml.bz2";
 
     private final boolean checkNew;
@@ -111,7 +111,7 @@ public class WikiDumpLoader {
      */
     private long checkNewDump(Locale locale) throws IOException {
         try {
-            String localeDumpUrl = String.format(dumpUrl, locale.getLanguage(), locale.getLanguage());
+            String localeDumpUrl = String.format(DUMP_URL, locale.getLanguage(), locale.getLanguage());
             URLConnection connection = new URL(localeDumpUrl).openConnection();
             String lastModified = connection.getHeaderField("Last-Modified");
             return new SimpleDateFormat("E, d MMM yyyy HH:mm:ss Z", Locale.ENGLISH)
@@ -142,8 +142,9 @@ public class WikiDumpLoader {
 
             for (FileStatus status : stati) {
                 long fileChange = status.getModificationTime();
-                if (fileChange > lastLocalChange)
+                if (fileChange > lastLocalChange) {
                     lastLocalDump = status;
+                }
             }
         } catch (IOException e) {
             logger.error(e);
@@ -163,7 +164,7 @@ public class WikiDumpLoader {
      */
     private Path loadNewDump(FileSystem fs, Path basePath, long time, Locale locale) throws IOException {
         System.out.println("loading new dump");
-        String localeDumpUrl = String.format(dumpUrl, locale.getLanguage(), locale.getLanguage());
+        String localeDumpUrl = String.format(DUMP_URL, locale.getLanguage(), locale.getLanguage());
         URLConnection connection = new URL(localeDumpUrl).openConnection();
 
         try (BZip2CompressorInputStream bzIn = new BZip2CompressorInputStream(connection.getInputStream())) {

@@ -19,22 +19,19 @@
 package de.gesundkrank.wikipedia.hadoop.util;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.MapFile;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 import java.io.IOException;
 import java.text.NumberFormat;
 
-public class MapFileOutputFormat extends FileOutputFormat<WritableComparable,Writable> {
+public class MapFileOutputFormat extends FileOutputFormat<WritableComparable, Writable> {
 
 	private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance();
 	  static {
@@ -49,17 +46,15 @@ public class MapFileOutputFormat extends FileOutputFormat<WritableComparable,Wri
 
 		FileOutputCommitter committer =
 		      (FileOutputCommitter) getOutputCommitter(context);
-		Path file =
-			new Path(committer.getWorkPath(), getUniqueFile(context, "", ""));
-	    FileSystem fs = file.getFileSystem(conf);
 
-		final MapFile.Writer out = new MapFile.Writer(
-				conf,
-				fs,
-				file.toString(),
-				context.getOutputKeyClass().asSubclass(WritableComparable.class),
-				context.getOutputValueClass().asSubclass(Writable.class),
-				SequenceFile.CompressionType.BLOCK);
+        SequenceFile.Writer.Option keyClass = SequenceFile.Writer.keyClass(WritableComparable.class);
+        SequenceFile.Writer.Option valueClass = SequenceFile.Writer.valueClass(Writable.class);
+        SequenceFile.Writer.Option compressionType =
+                SequenceFile.Writer.compression(SequenceFile.CompressionType.BLOCK);
+
+
+        final MapFile.Writer out =
+                new MapFile.Writer(conf, committer.getWorkPath(), keyClass, valueClass, compressionType);
 
 		return new RecordWriter<WritableComparable, Writable>() {
 			@Override
@@ -75,13 +70,4 @@ public class MapFileOutputFormat extends FileOutputFormat<WritableComparable,Wri
 			}
 		};
 	}
-
-	// Overrides a method in the class FileOutputFormat
-	public synchronized static String getUniqueFile(TaskAttemptContext context,
-			String name, String extension) {
-		TaskID taskId = context.getTaskAttemptID().getTaskID();
-		int partition = taskId.getId();
-        return name + NUMBER_FORMAT.format(partition) + extension;
-	}
-
 }

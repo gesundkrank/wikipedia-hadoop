@@ -30,7 +30,7 @@ import java.io.IOException;
 /**
  * @author Jan Graßegger<jan.grassegger@uni-weimar.de>
  */
-public class MapFileReader implements AutoCloseable{
+public final class MapFileReader implements AutoCloseable {
     private static MapFileReader INSTANCE;
 
     private final Logger logger;
@@ -93,8 +93,8 @@ public class MapFileReader implements AutoCloseable{
         }
 
         WikiPageWritable page = new WikiPageWritable();
-        page = (WikiPageWritable)reader.get(title, page);
-        if(page == null) {
+        page = (WikiPageWritable) reader.get(title, page);
+        if (page == null) {
             throw new ArticleNotFoundException(title.toString());
         }
         return page;
@@ -111,7 +111,7 @@ public class MapFileReader implements AutoCloseable{
                 reader.close();
             }
         } catch (IOException e) {
-            // nothing to do
+            logger.warn(e, e);
         }
     }
 
