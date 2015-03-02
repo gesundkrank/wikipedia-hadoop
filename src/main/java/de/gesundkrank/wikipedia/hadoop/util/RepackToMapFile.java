@@ -21,6 +21,13 @@ package de.gesundkrank.wikipedia.hadoop.util;
 import de.gesundkrank.wikipedia.hadoop.WikiPageWritable;
 import de.gesundkrank.wikipedia.hadoop.inputformat.WikiInputFormat;
 import de.gesundkrank.wikipedia.hadoop.io.WikiDumpLoader;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -48,10 +55,36 @@ public class RepackToMapFile extends Configured implements Tool {
     }
 
     @Override
-    public int run(String[] strings) throws Exception {
+    public int run(String[] args) throws Exception {
+
+        CommandLineParser parser = new GnuParser();
+        Options options = getOptions();
+
+        try {
+            CommandLine commandLine = parser.parse(options, args);
+
+            if (commandLine.hasOption('h')) {
+                printHelp(options);
+                return 0;
+            }
+
+            String basePath = commandLine.getOptionValue('b');
+            String outputPath = commandLine.getOptionValue('o');
+            boolean checkNew = commandLine.hasOption('c');
+
+            return run(basePath, outputPath, checkNew);
+
+        } catch (ParseException e) {
+            System.err.printf("Parsing failed.  Reason: %s%n", e.getMessage());
+            printHelp(options);
+            return 1;
+        }
+    }
+
+    public int run(String basePath, String outputPath, boolean checkNew) throws Exception {
         Configuration configuration = getConf();
 
-        logger.info("Tool name: "+getClass().getSimpleName());
+        logger.info("Tool name: " + getClass().getSimpleName());
 
         Job job = new Job(configuration, getClass().getSimpleName());
         job.setJarByClass(getClass());
@@ -63,16 +96,40 @@ public class RepackToMapFile extends Configured implements Tool {
         job.setOutputValueClass(WikiPageWritable.class);
 
 
-        WikiDumpLoader wikiDumpLoader = new WikiDumpLoader(false);
-        wikiDumpLoader.addWikiDump(job, "wikidumps");
+        WikiDumpLoader wikiDumpLoader = new WikiDumpLoader(checkNew);
+        wikiDumpLoader.addWikiDump(job, basePath);
 
-        MapFileOutputFormat.setOutputPath(job, new Path("wikipedia-mapfile"));
+        MapFileOutputFormat.setOutputPath(job, new Path(outputPath));
 
         job.setNumReduceTasks(1);
 
         return job.waitForCompletion(true) ? 0 : 1;
+    }
+
+    private static Options getOptions() {
 
 
+        Options options = new Options();
+
+        options.addOption("h", "help", false, "Show this message.");
+
+        Option basePath = new Option("b", "basePath", true, "The path where your Wikipedia dumps get stored. " +
+                "Creates subPaths.");
+        basePath.setRequired(true);
+        options.addOption(basePath);
+
+        Option outputPath = new Option("o", "outputPath", true, "Path where the MapFile is stored.");
+        outputPath.setRequired(true);
+        options.addOption(outputPath);
+
+        options.addOption("c", "checkNew", false, "Checks for new Wikipedia online.");
+
+        return options;
+    }
+
+    private static void printHelp(Options options) {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp( "hadoop jar <jar>", options);
     }
 
     public static void main(String[] args) throws Exception {
