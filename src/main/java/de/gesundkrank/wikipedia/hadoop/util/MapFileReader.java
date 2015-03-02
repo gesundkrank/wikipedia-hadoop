@@ -19,9 +19,8 @@
 package de.gesundkrank.wikipedia.hadoop.util;
 
 import de.gesundkrank.wikipedia.hadoop.WikiPageWritable;
-import de.gesundkrank.wikipedia.hadoop.converter.Converter;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.MapFile;
 import org.apache.hadoop.io.Text;
 import org.apache.log4j.Logger;
@@ -31,41 +30,21 @@ import java.io.IOException;
 /**
  * @author Jan Graßegger<jan.grassegger@uni-weimar.de>
  */
-public enum MapFileReader {
-    INSTANCE;
+public class MapFileReader implements AutoCloseable{
+    private static MapFileReader INSTANCE;
 
-    public static final String namenode = "hdfs://webis70.medien.uni-weimar.de:8020";
-    private Configuration conf;
-    private FileSystem fs;
-    private Reader reader;
-    private final String path = "/user/moji8208/wikipedia-mapfile";
     private final Logger logger;
+    private Configuration conf;
+    private MapFile.Reader reader;
+    private String nameNode;
+    private Path path = new Path("wikipedia-mapfile");
 
-    //	private Random random = new Random();
-    private class Reader {
-        private MapFile.Reader reader = null;
-        private Logger logger = Logger.getLogger(getClass());
-
-        public Reader() {
-            try {
-                reader = new MapFile.Reader(fs, path, conf);
-            } catch (IOException e) {
-                logger.error("Can't initialize MapFile.Reader.", e);
-            }
+    public static MapFileReader getInstance() {
+        if (INSTANCE == null) {
+            INSTANCE = new MapFileReader();
         }
 
-        public WikiPageWritable read(Text title) throws IOException, ArticleNotFoundException {
-            WikiPageWritable page = new WikiPageWritable();
-            reader.get(title, page);
-            if(page == null) throw new ArticleNotFoundException(title.toString());
-            return page;
-        }
-
-        private void close() throws IOException {
-            reader.close();
-        }
-
-
+        return INSTANCE;
     }
 
     private MapFileReader() {
@@ -73,35 +52,67 @@ public enum MapFileReader {
         logger.debug("init MapFileRecordReader");
 
         conf = new Configuration();
-        conf.set("fs.default.name", namenode);
+
+        if (nameNode != null) {
+            conf.set("fs.default.name", nameNode);
+        }
+
         try {
-            fs = FileSystem.get(conf);
-            reader = new Reader();
+            reader = new MapFile.Reader(path, conf);
         } catch (IOException e) {
             logger.error(e);
         }
-
     }
 
-    public static WikiPageWritable read(Text title) throws IOException, ArticleNotFoundException {
-        return INSTANCE.reader.read(title);
+    private void initMapFileReader() throws IOException {
+        reader = new MapFile.Reader(path, conf);
     }
 
-    public static WikiPageWritable read(String title) throws IOException, ArticleNotFoundException {
+    public String getNameNode() {
+        return nameNode;
+    }
+
+    public void setNameNode(String nameNode) throws IOException {
+        this.nameNode = nameNode;
+        conf.set("fs.default.name", nameNode);
+        reader = null;
+    }
+
+    public Path getPath() {
+        return path;
+    }
+
+    public void setPath(String path) throws IOException {
+        this.path = new Path(path);
+        reader = null;
+    }
+
+    public WikiPageWritable read(Text title) throws IOException, ArticleNotFoundException {
+        if (reader == null) {
+            initMapFileReader();
+        }
+
+        WikiPageWritable page = new WikiPageWritable();
+        page = (WikiPageWritable)reader.get(title, page);
+        if(page == null) {
+            throw new ArticleNotFoundException(title.toString());
+        }
+        return page;
+    }
+
+    public WikiPageWritable read(String title) throws IOException, ArticleNotFoundException {
         return read(new Text(title));
     }
 
-    public static  void close() {
-        INSTANCE.logger.debug("closing MapFileRecordReader");
+    public void close() {
+        logger.debug("closing MapFileRecordReader");
         try {
-            INSTANCE.reader.close();
+            if (reader != null) {
+                reader.close();
+            }
         } catch (IOException e) {
             // nothing to do
         }
-    }
-
-    public static void main(String[] args) throws IOException, ArticleNotFoundException, Converter.ConverterException {
-        System.out.println(read("1969 Alpine Skiing World Cup – Women's Slalom").getRevisions().getFirst().getHTML());
     }
 
     public static class ArticleNotFoundException extends Exception {
@@ -109,4 +120,6 @@ public enum MapFileReader {
             super(String.format("Article with title %s does not exist", title));
         }
     }
+
+
 }

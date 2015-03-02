@@ -44,15 +44,7 @@ import java.io.IOException;
  * @author Jan Graßegger<jan.grassegger@uni-weimar.de>
  */
 public class RepackToMapFile extends Configured implements Tool {
-    private final static Logger logger = Logger.getLogger(RepackToMapFile.class);
-
-    public static class WikiMapper extends Mapper<Text, WikiPageWritable, Text, WikiPageWritable> {
-        @Override
-        protected void map(Text key, WikiPageWritable value, Context context) throws IOException, InterruptedException {
-            if(value.isRedirect()) return;
-            context.write(key, value);
-        }
-    }
+    private static final Logger LOGGER = Logger.getLogger(RepackToMapFile.class);
 
     @Override
     public int run(String[] args) throws Exception {
@@ -84,7 +76,7 @@ public class RepackToMapFile extends Configured implements Tool {
     public int run(String basePath, String outputPath, boolean checkNew) throws Exception {
         Configuration configuration = getConf();
 
-        logger.info("Tool name: " + getClass().getSimpleName());
+        LOGGER.info("Tool name: " + getClass().getSimpleName());
 
         Job job = new Job(configuration, getClass().getSimpleName());
         job.setJarByClass(getClass());
@@ -129,10 +121,21 @@ public class RepackToMapFile extends Configured implements Tool {
 
     private static void printHelp(Options options) {
         HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp( "hadoop jar <jar>", options);
+        formatter.printHelp("hadoop jar <jar>", options);
     }
 
     public static void main(String[] args) throws Exception {
         ToolRunner.run(new RepackToMapFile(), args);
+    }
+
+    public static class WikiMapper extends Mapper<Text, WikiPageWritable, Text, WikiPageWritable> {
+        @Override
+        protected void map(Text key, WikiPageWritable value, Context context) throws IOException, InterruptedException {
+            if (value.isRedirect()) {
+                return;
+            }
+
+            context.write(key, value);
+        }
     }
 }
