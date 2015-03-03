@@ -73,11 +73,13 @@ public enum Converter {
         return convert(wikiText, title, revisionId, true);
     }
 
-    public String convert(String wikiText, String title, long revisionId, boolean renderHtml) throws ConverterException {
+    public String convert(String wikiText, String title, long revisionId, boolean renderHtml)
+            throws ConverterException {
         try {
             wikiText = StringEscapeUtils.unescapeHtml4(wikiText);
         } catch (IllegalArgumentException e) {
             // ignore result if unescaping fails
+            logger.debug("unescaping wikiText failed");
         }
 
         try {
@@ -85,17 +87,14 @@ public enum Converter {
             PageId pageId = new PageId(pageTitle, revisionId);
             CompiledPage cp = compiler.postprocess(pageId, wikiText, null);
 
-            if (renderHtml)
-            {
+            if (renderHtml) {
                 StringWriter writer = new StringWriter();
                 HtmlPrinter p = new HtmlPrinter(writer, pageTitle.getFullTitle());
                 p.setCssResource("/org/sweble/wikitext/engine/utils/HtmlPrinter.css", "");
                 p.setStandaloneHtml(true, "");
                 p.go(cp.getPage());
                 return writer.toString();
-            }
-            else
-            {
+            } else {
                 return (String) visitor.go(cp.getPage());
             }
 

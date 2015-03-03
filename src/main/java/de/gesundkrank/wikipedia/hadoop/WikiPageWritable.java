@@ -149,14 +149,15 @@ public class WikiPageWritable implements WritableComparable<WikiPageWritable> {
         public void write(DataOutput dataOutput) throws IOException {
             dataOutput.writeInt(size());
 
-            for(WikiPageRevision revision : this)
+            for (WikiPageRevision revision : this) {
                 revision.write(dataOutput);
+            }
         }
 
         @Override
         public void readFields(DataInput dataInput) throws IOException {
             int size = dataInput.readInt();
-            for(int i = 0; i < size; i++){
+            for (int i = 0; i < size; i++) {
                 WikiPageRevision revision = new WikiPageRevision();
                 revision.readFields(dataInput);
                 addLast(revision);

@@ -39,7 +39,7 @@ import java.io.InputStreamReader;
  */
 public class WikiInputRecordReader
         extends RecordReader<Text, WikiPageWritable> {
-    private static final Logger logger = Logger.getLogger(WikiInputRecordReader.class);
+    private static final Logger LOGGER = Logger.getLogger(WikiInputRecordReader.class);
 
     private Text currentTitle = new Text();
     private WikiPageParser parser;
@@ -73,14 +73,15 @@ public class WikiInputRecordReader
             }*/
             currentReader = new BufferedReader(new InputStreamReader(inputStream));
         } catch (IOException e) {
-            logger.error(e);
+            LOGGER.error(e);
         }
     }
 
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
-        if (currentFile == null)
+        if (currentFile == null) {
             return false;
+        }
 
         if (currentFile.getPos() > fileSplit.getStart() + fileSplit.getLength()) {
             close();
@@ -95,8 +96,9 @@ public class WikiInputRecordReader
         }
 
         String title = currentWikiPage.getTitle();
-        if (title == null)
+        if (title == null) {
             return nextKeyValue();
+        }
         currentTitle.set(title);
         return true;
     }

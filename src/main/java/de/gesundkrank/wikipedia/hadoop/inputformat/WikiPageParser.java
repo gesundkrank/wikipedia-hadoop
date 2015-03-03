@@ -35,33 +35,33 @@ public class WikiPageParser {
     public static final String PAGE_START = "<page>";
     private static final char NEWLINE = '\n';
 
-    private static final Pattern titlePattern =
+    private static final Pattern TITLE_PATTERN =
             Pattern.compile(".*<title>(.+)</title>.*");
-    private static final Pattern idPattern =
+    private static final Pattern ID_PATTERN =
             Pattern.compile(".*<id>([0-9]+)</id>.*");
-    private static final Pattern redirectPattern =
+    private static final Pattern REDIRECT_PATTERN =
             Pattern.compile(".*<redirect.*/>.*");
-    private static final Pattern revisionPattern =
+    private static final Pattern REVISION_PATTERN =
             Pattern.compile(".*<revision>.*");
-    private static final Pattern revisionEndPattern =
+    private static final Pattern REVISION_END_PATTERN =
             Pattern.compile(".*</revision>.*");
-    private static final Pattern timestampPattern =
+    private static final Pattern TIMESTAMP_PATTERN =
             Pattern.compile(".*<timestamp>(.+)</timestamp>");
-    private static final Pattern contributorPattern =
+    private static final Pattern CONTRIBUTOR_PATTERN =
             Pattern.compile(".*<contributor>.*");
-    private static final Pattern usernamePattern =
+    private static final Pattern USERNAME_PATTERN =
             Pattern.compile(".*<username>(.+)</username>.*");
-    private static final Pattern commentPattern =
+    private static final Pattern COMMENT_PATTERN =
             Pattern.compile(".*<comment>(.+)</comment>.*");
-    private static final Pattern textBeginPattern =
+    private static final Pattern TEXT_BEGIN_PATTERN =
             Pattern.compile(".*<text xml:space=\"preserve\">(.+)");
-    private static final Pattern textEndPattern =
+    private static final Pattern TEXT_END_PATTERN =
             Pattern.compile("(.+)</text>.*");
-    private static final Pattern isMinorPattern =
+    private static final Pattern IS_MINOR_PATTERN =
             Pattern.compile(".*<minor />.*");
-    private static final Pattern pageEndPattern =
+    private static final Pattern PAGE_END_PATTERN =
             Pattern.compile(".*</page>.*");
-    private static final Pattern contributorEndPattern =
+    private static final Pattern CONTRIBUTOR_END_PATTERN =
             Pattern.compile(".*</contributor>.*");
 
 
@@ -77,15 +77,17 @@ public class WikiPageParser {
         boolean foundId = false;
         boolean foundRedirect = false;
 
-
         String line;
 
         while ((line = in.readLine()) != null) {
-            if (line.trim().startsWith(PAGE_START))
+            if (line.trim().startsWith(PAGE_START)) {
                 break;
+            }
         }
 
-        if (line == null) return null;
+        if (line == null) {
+            return null;
+        }
 
         WikiPageWritable wikiPage = new WikiPageWritable();
 
@@ -124,15 +126,12 @@ public class WikiPageParser {
                 WikiPageWritable.WikiPageRevision revision = wikiPage.newRevision();
                 readNextRevision(revision, in);
                 continue;
-
-
             }
 
-            Matcher pageEndMatcher = pageEndPattern.matcher(line);
-            if (pageEndMatcher.matches())
+            Matcher pageEndMatcher = PAGE_END_PATTERN.matcher(line);
+            if (pageEndMatcher.matches()) {
                 break;
-
-
+            }
         }
 
         return wikiPage;
@@ -239,7 +238,7 @@ public class WikiPageParser {
                     foundText = true;
                     StringBuilder text = new StringBuilder();
                     do {
-                        Matcher textEMatcher = textEndPattern.matcher(line);
+                        Matcher textEMatcher = TEXT_END_PATTERN.matcher(line);
                         if (textEMatcher.matches()) {
                             text.append(textEMatcher.group(1));
                             break;
@@ -254,7 +253,7 @@ public class WikiPageParser {
                 }
             }
 
-            Matcher revisionEndMatcher = revisionEndPattern.matcher(line);
+            Matcher revisionEndMatcher = REVISION_END_PATTERN.matcher(line);
             if (revisionEndMatcher.matches()) {
                 break;
             }
@@ -262,7 +261,7 @@ public class WikiPageParser {
     }
 
     public static String matchTitle(String line) {
-        Matcher titleMatcher = titlePattern.matcher(line);
+        Matcher titleMatcher = TITLE_PATTERN.matcher(line);
         if (titleMatcher.matches()) {
             return titleMatcher.group(1);
         }
@@ -270,7 +269,7 @@ public class WikiPageParser {
     }
 
     private static long matchId(String line) {
-        Matcher idMatcher = idPattern.matcher(line);
+        Matcher idMatcher = ID_PATTERN.matcher(line);
         if (idMatcher.matches()) {
             return Long.parseLong(idMatcher.group(1));
         }
@@ -278,17 +277,17 @@ public class WikiPageParser {
     }
 
     private static boolean matchRedirect(String line) {
-        Matcher redirectMatcher = redirectPattern.matcher(line);
+        Matcher redirectMatcher = REDIRECT_PATTERN.matcher(line);
         return redirectMatcher.matches();
     }
 
     public static boolean matchRevision(String line) {
-        Matcher revisionMatcher = revisionPattern.matcher(line);
+        Matcher revisionMatcher = REVISION_PATTERN.matcher(line);
         return revisionMatcher.matches();
     }
 
     private static long matchTimestamp(String line) {
-        Matcher timestampMatcher = timestampPattern.matcher(line);
+        Matcher timestampMatcher = TIMESTAMP_PATTERN.matcher(line);
         if (timestampMatcher.matches()) {
             String timeString = timestampMatcher.group(1);
             return DatatypeConverter.parseDateTime(timeString).getTimeInMillis();
@@ -297,12 +296,12 @@ public class WikiPageParser {
     }
 
     private static boolean matchContributor(String line) {
-        Matcher contributorMatcher = contributorPattern.matcher(line);
+        Matcher contributorMatcher = CONTRIBUTOR_PATTERN.matcher(line);
         return contributorMatcher.matches();
     }
 
     private static String matchUsername(String line) {
-        Matcher userNameMatcher = usernamePattern.matcher(line);
+        Matcher userNameMatcher = USERNAME_PATTERN.matcher(line);
         if (userNameMatcher.matches()) {
             return userNameMatcher.group(1);
         }
@@ -310,12 +309,12 @@ public class WikiPageParser {
     }
 
     private static boolean matchContributorEnd(String line) {
-        Matcher contributorEndMatcher = contributorEndPattern.matcher(line);
+        Matcher contributorEndMatcher = CONTRIBUTOR_END_PATTERN.matcher(line);
         return contributorEndMatcher.matches();
     }
 
     private static String matchComment(String line) {
-        Matcher commentMatcher = commentPattern.matcher(line);
+        Matcher commentMatcher = COMMENT_PATTERN.matcher(line);
         if (commentMatcher.matches()) {
             return commentMatcher.group(1);
         }
@@ -323,7 +322,7 @@ public class WikiPageParser {
     }
 
     private static String matchTextBegin(String line) {
-        Matcher textBeginMatcher = textBeginPattern.matcher(line);
+        Matcher textBeginMatcher = TEXT_BEGIN_PATTERN.matcher(line);
         if (textBeginMatcher.matches()) {
             return textBeginMatcher.group(1);
         }
@@ -331,7 +330,7 @@ public class WikiPageParser {
     }
 
     private static boolean matchMinor(String line) {
-        Matcher isMinorMatcher = isMinorPattern.matcher(line);
+        Matcher isMinorMatcher = IS_MINOR_PATTERN.matcher(line);
         return isMinorMatcher.matches();
     }
 

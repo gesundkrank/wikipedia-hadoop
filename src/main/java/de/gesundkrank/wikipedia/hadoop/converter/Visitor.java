@@ -23,6 +23,7 @@ import de.fau.cs.osr.ptk.common.ast.AstNode;
 import de.fau.cs.osr.ptk.common.ast.NodeList;
 import de.fau.cs.osr.ptk.common.ast.Text;
 import de.fau.cs.osr.utils.StringUtils;
+import org.apache.log4j.Logger;
 import org.sweble.wikitext.engine.Page;
 import org.sweble.wikitext.engine.PageTitle;
 import org.sweble.wikitext.engine.utils.EntityReferences;
@@ -68,8 +69,10 @@ import java.util.regex.Pattern;
  * better understand the visitor pattern as implemented by the Visitor class,
  * please take a look at the following resources:
  * <ul>
- * <li>{@see <a href="http://en.wikipedia.org/wiki/Visitor_pattern">http://en.wikipedia.org/wiki/Visitor_pattern</a>} (classic pattern)</li>
- * <li>{@see <a href="http://www.javaworld.com/javaworld/javatips/jw-javatip98.html">http://www.javaworld.com/javaworld/javatips/jw-javatip98.html</a>}
+ * <li>{@see <a href="http://en.wikipedia.org/wiki/Visitor_pattern">http://en.wikipedia.org/wiki/Visitor_pattern</a>}
+ * (classic pattern)</li>
+ * <li>{@see <a href="http://www.javaworld.com/javaworld/javatips/jw-javatip98.html">
+ *     http://www.javaworld.com/javaworld/javatips/jw-javatip98.html</a>}
  * (the version we use here)</li>
  * </ul>
  * <p/>
@@ -87,10 +90,11 @@ import java.util.regex.Pattern;
  * </ul>
  */
 public class Visitor extends AstVisitor {
-    private static final Pattern ws = Pattern.compile("\\s+");
+    private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
     private final SimpleWikiConfiguration config;
     private final int wrapCol;
+    private final Logger logger;
     private StringBuilder sb;
     private StringBuilder line;
     private boolean pastBod;
@@ -103,6 +107,7 @@ public class Visitor extends AstVisitor {
     // =========================================================================
 
     public Visitor(SimpleWikiConfiguration config, int wrapCol) {
+        this.logger = Logger.getLogger(getClass());
         this.config = config;
         this.wrapCol = wrapCol;
     }
@@ -131,6 +136,7 @@ public class Visitor extends AstVisitor {
     }
 
     // =========================================================================
+
 
     public void visit(AstNode n) {
         // Fallback for all nodes that are not explicitly handled below
@@ -229,14 +235,15 @@ public class Visitor extends AstVisitor {
     public void visit(InternalLink link) {
         try {
             PageTitle page = PageTitle.make(config, link.getTarget());
-            if (page.getNamespace().equals(config.getNamespace("Category")))
+            if (page.getNamespace().equals(config.getNamespace("Category"))) {
                 return;
+            }
         } catch (LinkTargetException e) {
+            logger.debug(e, e);
         }
 
         write(link.getPrefix());
-        if (link.getTitle().getContent() == null
-            || link.getTitle().getContent().isEmpty()) {
+        if (link.getTitle().getContent() == null || link.getTitle().getContent().isEmpty()) {
             write(link.getTarget());
         } else {
             iterate(link.getTitle());
@@ -259,22 +266,26 @@ public class Visitor extends AstVisitor {
         sb = saveSb;
 
         if (s.getLevel() >= 1) {
-            while (sections.size() > s.getLevel())
+            while (sections.size() > s.getLevel()) {
                 sections.removeLast();
-            while (sections.size() < s.getLevel())
+            }
+            while (sections.size() < s.getLevel()) {
                 sections.add(1);
+            }
 
             StringBuilder sb2 = new StringBuilder();
             for (int i = 0; i < sections.size(); ++i) {
-                if (i < 1)
+                if (i < 1) {
                     continue;
+                }
 
                 sb2.append(sections.get(i));
                 sb2.append('.');
             }
 
-            if (sb2.length() > 0)
+            if (sb2.length() > 0) {
                 sb2.append(' ');
+            }
             sb2.append(title);
             title = sb2.toString();
         }
@@ -287,8 +298,10 @@ public class Visitor extends AstVisitor {
 
         iterate(s.getBody());
 
-        while (sections.size() > s.getLevel())
+        while (sections.size() > s.getLevel()) {
             sections.removeLast();
+        }
+
         sections.add(sections.removeLast() + 1);
     }
 
@@ -316,13 +329,21 @@ public class Visitor extends AstVisitor {
     }
 
     public void visit(Template n) {
-        if (n.isEmpty()) return;
+        if (n.isEmpty()) {
+            return;
+        }
         NodeList nl = n.getName();
-        if (nl.isEmpty()) return;
+        if (nl.isEmpty()) {
+            return;
+        }
         AstNode nameNode = nl.get(0);
-        if (!(nameNode instanceof Text)) return;
+        if (!(nameNode instanceof Text)) {
+            return;
+        }
         String name = ((Text) nameNode).getContent();
-        if (!name.equals("Reflist")) return;
+        if (!name.equals("Reflist")) {
+            return;
+        }
         for (TagExtension te : refs) {
             write(te.getBody());
             newline(2);
@@ -357,14 +378,16 @@ public class Visitor extends AstVisitor {
 
     private void newline(int num) {
         if (pastBod) {
-            if (num > needNewlines)
+            if (num > needNewlines) {
                 needNewlines = num;
+            }
         }
     }
 
     private void wantSpace() {
-        if (pastBod)
+        if (pastBod) {
             needSpace = true;
+        }
     }
 
     private void finishLine() {
@@ -381,22 +404,27 @@ public class Visitor extends AstVisitor {
 
     private void writeWord(String s) {
         int length = s.length();
-        if (length == 0)
+        if (length == 0) {
             return;
-
-        if (!noWrap && needNewlines <= 0) {
-            if (needSpace)
-                length += 1;
-
-            if (line.length() + length >= wrapCol && line.length() > 0)
-                writeNewlines(1);
         }
 
-        if (needSpace && needNewlines <= 0)
-            line.append(' ');
+        if (!noWrap && needNewlines <= 0) {
+            if (needSpace) {
+                length += 1;
+            }
 
-        if (needNewlines > 0)
+            if (line.length() + length >= wrapCol && line.length() > 0) {
+                writeNewlines(1);
+            }
+        }
+
+        if (needSpace && needNewlines <= 0) {
+            line.append(' ');
+        }
+
+        if (needNewlines > 0) {
             writeNewlines(needNewlines);
+        }
 
         needSpace = false;
         pastBod = true;
@@ -404,21 +432,25 @@ public class Visitor extends AstVisitor {
     }
 
     private void write(String s) {
-        if (s.isEmpty())
+        if (s.isEmpty()) {
             return;
-
-        if (Character.isSpaceChar(s.charAt(0)))
-            wantSpace();
-
-        String[] words = ws.split(s);
-        for (int i = 0; i < words.length; ) {
-            writeWord(words[i]);
-            if (++i < words.length)
-                wantSpace();
         }
 
-        if (Character.isSpaceChar(s.charAt(s.length() - 1)))
+        if (Character.isSpaceChar(s.charAt(0))) {
             wantSpace();
+        }
+
+        String[] words = WHITESPACE.split(s);
+        for (int i = 0; i < words.length;) {
+            writeWord(words[i]);
+            if (++i < words.length) {
+                wantSpace();
+            }
+        }
+
+        if (Character.isSpaceChar(s.charAt(s.length() - 1))) {
+            wantSpace();
+        }
     }
 
     private void write(char[] cs) {
