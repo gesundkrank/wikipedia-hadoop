@@ -78,7 +78,7 @@ public class RepackToMapFile extends Configured implements Tool {
 
         LOGGER.info("Tool name: " + getClass().getSimpleName());
 
-        Job job = new Job(configuration, getClass().getSimpleName());
+        Job job = Job.getInstance(configuration, getClass().getSimpleName());
         job.setJarByClass(getClass());
 
         job.setMapperClass(WikiMapper.class);
@@ -131,7 +131,8 @@ public class RepackToMapFile extends Configured implements Tool {
     public static class WikiMapper
             extends Mapper<LongWritable, WikiRevisionWritable, LongWritable, WikiRevisionWritable> {
         @Override
-        protected void map(LongWritable key, WikiRevisionWritable value, Context context) throws IOException, InterruptedException {
+        protected void map(LongWritable key, WikiRevisionWritable value, Context context) throws IOException,
+                InterruptedException {
             /*if (value.isRedirect()) {
                 return;
             } */
