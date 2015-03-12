@@ -18,9 +18,9 @@
 
 package de.gesundkrank.wikipedia.hadoop.inputformat;
 
-import de.gesundkrank.wikipedia.hadoop.WikiPageWritable;
+import de.gesundkrank.wikipedia.hadoop.WikiRevisionWritable;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -33,10 +33,10 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
  *
  * @author Jan Graßegger <jan.grassegger@uni-weimar.de>
  */
-public class WikiInputFormat extends FileInputFormat<Text, WikiPageWritable> {
+public class WikiInputFormat extends FileInputFormat<LongWritable, WikiRevisionWritable> {
 
     @Override
-    public RecordReader<Text, WikiPageWritable> createRecordReader(
+    public RecordReader<LongWritable, WikiRevisionWritable> createRecordReader(
             InputSplit split, TaskAttemptContext context) {
 
         return new WikiInputRecordReader();

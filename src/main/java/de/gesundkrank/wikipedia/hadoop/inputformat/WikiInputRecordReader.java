@@ -18,11 +18,11 @@
 
 package de.gesundkrank.wikipedia.hadoop.inputformat;
 
-import de.gesundkrank.wikipedia.hadoop.WikiPageWritable;
+import de.gesundkrank.wikipedia.hadoop.WikiRevisionWritable;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
@@ -38,12 +38,12 @@ import java.io.InputStreamReader;
  * Jan Graßegger<jan.grassegger@uni-weimar.de>
  */
 public class WikiInputRecordReader
-        extends RecordReader<Text, WikiPageWritable> {
+        extends RecordReader<LongWritable, WikiRevisionWritable> {
     private static final Logger LOGGER = Logger.getLogger(WikiInputRecordReader.class);
 
-    private Text currentTitle = new Text();
+    private LongWritable currentId = new LongWritable();
     private WikiPageParser parser;
-    private WikiPageWritable currentWikiPage;
+    private WikiRevisionWritable currentRevision;
     private FSDataInputStream currentFile;
     private BufferedReader currentReader;
     private FileSystem fs;
@@ -89,30 +89,28 @@ public class WikiInputRecordReader
         }
 
 
-        currentWikiPage = parser.readNextPage(currentReader);
-        if (currentWikiPage == null) {
+        currentRevision = parser.readNextRevision(currentReader);
+        if (currentRevision == null) {
             close();
             return false;
         }
 
-        String title = currentWikiPage.getTitle();
-        if (title == null) {
-            return nextKeyValue();
-        }
-        currentTitle.set(title);
+        long id = currentRevision.getId();
+
+        currentId.set(id);
         return true;
     }
 
     @Override
-    public Text getCurrentKey() throws IOException,
+    public LongWritable getCurrentKey() throws IOException,
             InterruptedException {
-        return currentTitle;
+        return currentId;
     }
 
     @Override
-    public WikiPageWritable getCurrentValue() throws IOException,
+    public WikiRevisionWritable getCurrentValue() throws IOException,
             InterruptedException {
-        return currentWikiPage;
+        return currentRevision;
     }
 
     @Override

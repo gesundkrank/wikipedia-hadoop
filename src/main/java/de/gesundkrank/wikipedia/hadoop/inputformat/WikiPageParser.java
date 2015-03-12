@@ -20,6 +20,8 @@ package de.gesundkrank.wikipedia.hadoop.inputformat;
 
 
 import de.gesundkrank.wikipedia.hadoop.WikiPageWritable;
+import de.gesundkrank.wikipedia.hadoop.WikiRevisionContributor;
+import de.gesundkrank.wikipedia.hadoop.WikiRevisionWritable;
 import org.apache.commons.lang3.StringEscapeUtils;
 
 import javax.xml.bind.DatatypeConverter;
@@ -66,86 +68,14 @@ public class WikiPageParser {
 
 
     private long numBytesRead = 0;
+    private WikiPageWritable currentPage;
 
     public WikiPageParser() {
+        currentPage = null;
     }
 
-    public WikiPageWritable readNextPage(BufferedReader in)
-            throws IOException {
+    public WikiRevisionWritable readNextRevision(BufferedReader in) throws IOException {
 
-        boolean foundTitle = false;
-        boolean foundId = false;
-        boolean foundRedirect = false;
-
-        String line;
-
-        while ((line = in.readLine()) != null) {
-            if (line.trim().startsWith(PAGE_START)) {
-                break;
-            }
-        }
-
-        if (line == null) {
-            return null;
-        }
-
-        WikiPageWritable wikiPage = new WikiPageWritable();
-
-        while ((line = in.readLine()) != null) {
-
-            //title
-            if (!foundTitle) {
-                String title = matchTitle(line);
-                if (title != null) {
-                    wikiPage.setTitle(title);
-                    foundTitle = true;
-                    continue;
-                }
-
-            }
-
-            //id
-            if (!foundId) {
-                long id = matchId(line);
-                if (id != -1) {
-                    wikiPage.setId(id);
-                    foundId = true;
-                    continue;
-                }
-            }
-
-            //redirect
-            if (!foundRedirect && matchRedirect(line)) {
-                wikiPage.setRedirect(true);
-                foundRedirect = true;
-                continue;
-            }
-
-            //revision
-            if (matchRevision(line)) {
-                WikiPageWritable.WikiPageRevision revision = wikiPage.newRevision();
-                readNextRevision(revision, in);
-                continue;
-            }
-
-            Matcher pageEndMatcher = PAGE_END_PATTERN.matcher(line);
-            if (pageEndMatcher.matches()) {
-                break;
-            }
-        }
-
-        return wikiPage;
-    }
-
-    public WikiPageWritable.WikiPageRevision readNextRevision(BufferedReader in) throws IOException {
-        WikiPageWritable.WikiPageRevision revision = new WikiPageWritable.WikiPageRevision();
-        readNextRevision(revision, in);
-        return revision;
-    }
-
-    public void readNextRevision(WikiPageWritable.WikiPageRevision revision, BufferedReader in) throws IOException {
-
-        String line;
         boolean foundRevisionId = false;
         boolean foundContributor = false;
         boolean foundComment = false;
@@ -153,7 +83,24 @@ public class WikiPageParser {
         boolean foundTimestamp = false;
         boolean foundMinor = false;
 
-        while ((line = in.readLine()) != null) {
+        WikiRevisionWritable revision = new WikiRevisionWritable(currentPage);
+
+        while (in.ready()) {
+            String line = in.readLine();
+
+            boolean isPageStart = line.trim().startsWith(PAGE_START);
+
+            if (currentPage == null && !isPageStart) {
+                continue;
+            }
+
+            if (isPageStart) {
+                currentPage = readNextPage(in);
+                if (currentPage.getTitle() == null) {
+                    continue;
+                }
+                revision.setPage(currentPage);
+            }
 
             //revisionid
             if (!foundRevisionId) {
@@ -183,7 +130,7 @@ public class WikiPageParser {
                 boolean foundUsername = false;
                 boolean foundContributorId = false;
 
-                WikiPageWritable.WikiPageRevision.WikiPageContributor contributor = revision.getContributor();
+                WikiRevisionContributor contributor = new WikiRevisionContributor();
                 do {
                     //username
                     if (!foundUsername) {
@@ -255,9 +202,64 @@ public class WikiPageParser {
 
             Matcher revisionEndMatcher = REVISION_END_PATTERN.matcher(line);
             if (revisionEndMatcher.matches()) {
+                return revision;
+            }
+        }
+
+        return null;
+    }
+
+    private WikiPageWritable readNextPage(BufferedReader in) throws IOException {
+        boolean foundTitle = false;
+        boolean foundId = false;
+        boolean foundRedirect = false;
+
+        WikiPageWritable wikiPage = new WikiPageWritable();
+
+        while (in.ready()) {
+
+            String line = in.readLine();
+
+            //title
+            if (!foundTitle) {
+                String title = matchTitle(line);
+                if (title != null) {
+                    wikiPage.setTitle(title);
+                    foundTitle = true;
+                    continue;
+                }
+
+            }
+
+            //id
+            if (!foundId) {
+                long id = matchId(line);
+                if (id != -1) {
+                    wikiPage.setId(id);
+                    foundId = true;
+                    continue;
+                }
+            }
+
+            //redirect
+            if (!foundRedirect && matchRedirect(line)) {
+                wikiPage.setRedirect(true);
+                foundRedirect = true;
+                continue;
+            }
+
+            //revision
+            if (matchRevision(line)) {
+                break;
+            }
+
+            Matcher pageEndMatcher = PAGE_END_PATTERN.matcher(line);
+            if (pageEndMatcher.matches()) {
                 break;
             }
         }
+
+        return wikiPage;
     }
 
     public static String matchTitle(String line) {

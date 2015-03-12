@@ -18,7 +18,7 @@
 
 package de.gesundkrank.wikipedia.hadoop.util;
 
-import de.gesundkrank.wikipedia.hadoop.WikiPageWritable;
+import de.gesundkrank.wikipedia.hadoop.WikiRevisionWritable;
 import de.gesundkrank.wikipedia.hadoop.inputformat.WikiInputFormat;
 import de.gesundkrank.wikipedia.hadoop.io.WikiDumpLoader;
 import org.apache.commons.cli.CommandLine;
@@ -31,7 +31,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.util.Tool;
@@ -84,8 +84,8 @@ public class RepackToMapFile extends Configured implements Tool {
         job.setMapperClass(WikiMapper.class);
         job.setInputFormatClass(WikiInputFormat.class);
         job.setOutputFormatClass(MapFileOutputFormat.class);
-        job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(WikiPageWritable.class);
+        job.setOutputKeyClass(LongWritable.class);
+        job.setOutputValueClass(WikiRevisionWritable.class);
 
 
         WikiDumpLoader wikiDumpLoader = new WikiDumpLoader(checkNew);
@@ -128,12 +128,13 @@ public class RepackToMapFile extends Configured implements Tool {
         ToolRunner.run(new RepackToMapFile(), args);
     }
 
-    public static class WikiMapper extends Mapper<Text, WikiPageWritable, Text, WikiPageWritable> {
+    public static class WikiMapper
+            extends Mapper<LongWritable, WikiRevisionWritable, LongWritable, WikiRevisionWritable> {
         @Override
-        protected void map(Text key, WikiPageWritable value, Context context) throws IOException, InterruptedException {
-            if (value.isRedirect()) {
+        protected void map(LongWritable key, WikiRevisionWritable value, Context context) throws IOException, InterruptedException {
+            /*if (value.isRedirect()) {
                 return;
-            }
+            } */
 
             context.write(key, value);
         }
