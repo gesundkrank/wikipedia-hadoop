@@ -1,5 +1,5 @@
 /*
- * This file is part of wikipedia-hadoop. The new internet cookbook
+ * This file is part of wikipedia-hadoop.
  * Copyright (C) 2015 Jan Graßegger
  *
  * This program is free software: you can redistribute it and/or modify

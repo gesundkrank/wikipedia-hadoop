@@ -1,6 +1,6 @@
 /*
- * This file is part of wikipedia-hadoop. The new internet cookbook
- * Copyright (C) 2014 Jan Graßegger
+ * This file is part of wikipedia-hadoop.
+ * Copyright (C) 2015 Jan Graßegger
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
