@@ -43,7 +43,9 @@ dependencies {
 }
 
 test {
-    useTestNG()
+    useTestNG{
+        useDefaultListeners = true
+    }
 }
 
 task buildRepackToMapFile (type:Jar) {
