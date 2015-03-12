@@ -170,8 +170,8 @@ public class WikiRevisionWritable implements WritableComparable<WikiRevisionWrit
 
     @Override
     public String toString() {
-        return String.format("id:%d\ntimestamp:%d\ncontributor:%s\ncomment:%s\nisMinor:%s\ntext:%s",
-                id, timestamp, contributor, comment, isMinor, text);
+        return String.format("id:%d%n timestamp:%d%n page: %s %n contributor:%s %n comment:%s %n isMinor:%s %n text:%s",
+                id, timestamp, page, contributor, comment, isMinor, text);
     }
 
 

@@ -16,7 +16,7 @@
  * along with this program. If not, see [http://www.gnu.org/licenses/].
  */
 
-package de.gesundkrank.wikipedia.hadoop.inputformat;
+package de.gesundkrank.wikipedia.hadoop.parser;
 
 
 import de.gesundkrank.wikipedia.hadoop.WikiPageWritable;
@@ -33,44 +33,30 @@ import java.util.regex.Pattern;
 /**
  * @author Jan Graßegger<jan.grassegger@uni-weimar.de>
  */
-public class WikiPageParser {
+public class Parser {
     public static final String PAGE_START = "<page>";
     private static final char NEWLINE = '\n';
 
-    private static final Pattern TITLE_PATTERN =
-            Pattern.compile(".*<title>(.+)</title>.*");
-    private static final Pattern ID_PATTERN =
-            Pattern.compile(".*<id>([0-9]+)</id>.*");
-    private static final Pattern REDIRECT_PATTERN =
-            Pattern.compile(".*<redirect.*/>.*");
-    private static final Pattern REVISION_PATTERN =
-            Pattern.compile(".*<revision>.*");
-    private static final Pattern REVISION_END_PATTERN =
-            Pattern.compile(".*</revision>.*");
-    private static final Pattern TIMESTAMP_PATTERN =
-            Pattern.compile(".*<timestamp>(.+)</timestamp>");
-    private static final Pattern CONTRIBUTOR_PATTERN =
-            Pattern.compile(".*<contributor>.*");
-    private static final Pattern USERNAME_PATTERN =
-            Pattern.compile(".*<username>(.+)</username>.*");
-    private static final Pattern COMMENT_PATTERN =
-            Pattern.compile(".*<comment>(.+)</comment>.*");
-    private static final Pattern TEXT_BEGIN_PATTERN =
-            Pattern.compile(".*<text xml:space=\"preserve\">(.+)");
-    private static final Pattern TEXT_END_PATTERN =
-            Pattern.compile("(.+)</text>.*");
-    private static final Pattern IS_MINOR_PATTERN =
-            Pattern.compile(".*<minor />.*");
-    private static final Pattern PAGE_END_PATTERN =
-            Pattern.compile(".*</page>.*");
-    private static final Pattern CONTRIBUTOR_END_PATTERN =
-            Pattern.compile(".*</contributor>.*");
+    private static final Pattern TITLE_PATTERN = Pattern.compile(".*<title>(.+)</title>.*"),
+            ID_PATTERN = Pattern.compile(".*<id>([0-9]+)</id>.*"),
+            REDIRECT_PATTERN = Pattern.compile(".*<redirect.*/>.*"),
+            REVISION_PATTERN = Pattern.compile(".*<revision>.*"),
+            REVISION_END_PATTERN = Pattern.compile(".*</revision>.*"),
+            TIMESTAMP_PATTERN = Pattern.compile(".*<timestamp>(.+)</timestamp>"),
+            CONTRIBUTOR_PATTERN = Pattern.compile(".*<contributor>.*"),
+            USERNAME_PATTERN = Pattern.compile(".*<username>(.+)</username>.*"),
+            COMMENT_PATTERN = Pattern.compile(".*<comment>(.+)</comment>.*"),
+            TEXT_BEGIN_PATTERN = Pattern.compile(".*<text xml:space=\"preserve\">(.+)"),
+            TEXT_END_PATTERN = Pattern.compile("(.+)</text>.*"),
+            IS_MINOR_PATTERN = Pattern.compile(".*<minor />.*"),
+            PAGE_END_PATTERN = Pattern.compile(".*</page>.*"),
+            CONTRIBUTOR_END_PATTERN = Pattern.compile(".*</contributor>.*");
 
 
     private long numBytesRead = 0;
     private WikiPageWritable currentPage;
 
-    public WikiPageParser() {
+    public Parser() {
         currentPage = null;
     }
 

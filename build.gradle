@@ -39,7 +39,7 @@ dependencies {
             'org.apache.logging.log4j:log4j-core:2.1',
             'org.sweble.wikitext:swc-engine:1.1.1'
 
-    testCompile 'junit:junit:4.11'
+    testCompile 'org.testng:testng:6.8.21'
 }
 
 task buildRepackToMapFile (type:Jar) {

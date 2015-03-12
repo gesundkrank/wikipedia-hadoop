@@ -19,6 +19,7 @@
 package de.gesundkrank.wikipedia.hadoop.inputformat;
 
 import de.gesundkrank.wikipedia.hadoop.WikiRevisionWritable;
+import de.gesundkrank.wikipedia.hadoop.parser.Parser;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -42,7 +43,7 @@ public class WikiInputRecordReader
     private static final Logger LOGGER = Logger.getLogger(WikiInputRecordReader.class);
 
     private LongWritable currentId = new LongWritable();
-    private WikiPageParser parser;
+    private Parser parser;
     private WikiRevisionWritable currentRevision;
     private FSDataInputStream currentFile;
     private BufferedReader currentReader;
@@ -53,7 +54,7 @@ public class WikiInputRecordReader
     public void initialize(InputSplit split, TaskAttemptContext context)
             throws IOException, InterruptedException {
         this.fs = FileSystem.get(context.getConfiguration());
-        this.parser = new WikiPageParser();
+        this.parser = new Parser();
         openSplit(split);
 
     }
