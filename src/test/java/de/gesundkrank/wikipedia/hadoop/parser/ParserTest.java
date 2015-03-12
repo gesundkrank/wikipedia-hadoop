@@ -29,6 +29,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.Locale;
 
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
@@ -83,6 +84,14 @@ public class ParserTest {
     }
 
     @Test(dependsOnMethods = "readFirstRevision")
+    public void firstRevisionPlainTextTest() {
+        String plainText = currentRevision.getPlainText(Locale.ENGLISH);
+        assertNotNull(plainText);
+
+        assertEquals("#REDIRECT Computer accessibility", plainText);
+    }
+
+    @Test(dependsOnMethods = "readFirstRevision")
     public void firstRevisionContributorTest() {
         WikiRevisionContributor contributor = currentRevision.getContributor();
         assertNotNull(contributor);
@@ -101,7 +110,7 @@ public class ParserTest {
         assertEquals(true, page.isRedirect());
     }
 
-    @Test(dependsOnMethods = {"readSecondRevision"})
+    @Test(dependsOnMethods = "readSecondRevision")
     public void secondRevisionHasFields() throws IOException {
         // check id
         assertEquals(645849603, currentRevision.getId());
@@ -148,5 +157,14 @@ public class ParserTest {
         assertEquals("Anarchism", page.getTitle());
         assertEquals(12, page.getId());
         assertEquals(false, page.isRedirect());
+    }
+
+    @Test(dependsOnMethods = "readSecondRevision")
+    public void secondRevisionPlainTextTest() {
+        String plainText = currentRevision.getPlainText(Locale.ENGLISH);
+        assertNotNull(plainText);
+
+        assertTrue(plainText.startsWith("Anarchism is a collection of movements and ideologies"));
+        assertTrue(plainText.endsWith("European Socialism: A History of Ideas and Movements (1959)"));
     }
 }

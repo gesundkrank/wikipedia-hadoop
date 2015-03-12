@@ -18,17 +18,22 @@
 
 package de.gesundkrank.wikipedia.hadoop;
 
-import de.gesundkrank.wikipedia.hadoop.converter.Converter;
 import org.apache.hadoop.io.WritableComparable;
+import org.wikiclean.WikiClean;
+import org.wikiclean.WikiCleanBuilder;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Locale;
 
 /**
  * @author Jan Graßegger<jan@anycook.de>
  */
 public class WikiRevisionWritable implements WritableComparable<WikiRevisionWritable> {
+
+    private static WikiClean cleaner;
+    private static Locale cleanerLocale;
 
     private long id;
     private long timestamp;
@@ -90,12 +95,24 @@ public class WikiRevisionWritable implements WritableComparable<WikiRevisionWrit
         return text;
     }
 
-    public String getPlainText() throws Converter.ConverterException {
-        return Converter.INSTANCE.convertToPlainText(text, "title", id);
-    }
+    public String getPlainText(Locale locale) {
+        if (cleaner == null || cleanerLocale != locale) {
+            cleanerLocale = locale;
+            WikiClean.WikiLanguage wikiLanguage ;
 
-    public String getHTML() throws Converter.ConverterException {
-        return Converter.INSTANCE.convertToHTML(text, "title", id);
+            if (locale == Locale.CHINESE) {
+                wikiLanguage = WikiClean.WikiLanguage.ZH;
+            } else if (locale == Locale.GERMAN) {
+                wikiLanguage = WikiClean.WikiLanguage.DE;
+            } else {
+                wikiLanguage = WikiClean.WikiLanguage.EN;
+            }
+
+            cleaner = new WikiCleanBuilder().withLanguage(wikiLanguage).build();
+        }
+
+        // WikiClean wants to read text from a xml element, so it gets one
+        return cleaner.clean("<text xml:space=\"preserve\">" + getText() + "</text>");
     }
 
     public void setText(String text) {
