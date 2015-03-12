@@ -42,6 +42,10 @@ dependencies {
     testCompile 'org.testng:testng:6.8.21'
 }
 
+test {
+    useTestNG()
+}
+
 task buildRepackToMapFile (type:Jar) {
     manifest{
         attributes("Main-Class": "de.gesundkrank.wikipedia.hadoop.util.RepackToMapFile");
