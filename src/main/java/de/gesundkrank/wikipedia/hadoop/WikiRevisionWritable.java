@@ -98,7 +98,7 @@ public class WikiRevisionWritable implements WritableComparable<WikiRevisionWrit
     public String getPlainText(Locale locale) {
         if (cleaner == null || cleanerLocale != locale) {
             cleanerLocale = locale;
-            WikiClean.WikiLanguage wikiLanguage ;
+            WikiClean.WikiLanguage wikiLanguage;
 
             if (locale == Locale.CHINESE) {
                 wikiLanguage = WikiClean.WikiLanguage.ZH;

@@ -24,7 +24,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 version = '1.0'
 
-// apply from: 'config/quality.gradle'
+apply from: 'config/quality.gradle'
 
 repositories {
     mavenCentral()
