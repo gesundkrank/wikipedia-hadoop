@@ -32,6 +32,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.util.Tool;
@@ -63,8 +64,9 @@ public class RepackToMapFile extends Configured implements Tool {
             String basePath = commandLine.getOptionValue('b');
             String outputPath = commandLine.getOptionValue('o');
             boolean checkNew = commandLine.hasOption('c');
+            boolean skipRedirect = commandLine.hasOption('r');
 
-            return run(basePath, outputPath, checkNew);
+            return run(basePath, outputPath, checkNew, skipRedirect);
 
         } catch (ParseException e) {
             System.err.printf("Parsing failed.  Reason: %s%n", e.getMessage());
@@ -73,8 +75,10 @@ public class RepackToMapFile extends Configured implements Tool {
         }
     }
 
-    public int run(String basePath, String outputPath, boolean checkNew) throws Exception {
+    public int run(String basePath, String outputPath, boolean checkNew, boolean skipRedirect) throws Exception {
         Configuration configuration = getConf();
+        configuration.setBoolean("skipRedirect", skipRedirect);
+
 
         LOGGER.info("Tool name: " + getClass().getSimpleName());
 
@@ -115,6 +119,7 @@ public class RepackToMapFile extends Configured implements Tool {
         options.addOption(outputPath);
 
         options.addOption("c", "checkNew", false, "Checks for new Wikipedia online.");
+        options.addOption("r", "skipRedirect", false, "Skip redirect pages when indexing");
 
         return options;
     }
@@ -130,14 +135,28 @@ public class RepackToMapFile extends Configured implements Tool {
 
     public static class WikiMapper
             extends Mapper<LongWritable, WikiRevisionWritable, LongWritable, WikiRevisionWritable> {
+
+        private static Counter redirectPagesCounter;
+        private static boolean skipRedirect;
+
         @Override
         protected void map(LongWritable key, WikiRevisionWritable value, Context context) throws IOException,
                 InterruptedException {
-            /*if (value.isRedirect()) {
-                return;
-            } */
+            if (value.getPage().isRedirect()) {
+                redirectPagesCounter.increment(1);
+
+                if (skipRedirect) {
+                    return;
+                }
+            }
 
             context.write(key, value);
+        }
+
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            redirectPagesCounter = context.getCounter("Mapper", "redirectPages");
+            skipRedirect = context.getConfiguration().getBoolean("skipRedirect", false);
         }
     }
 }
