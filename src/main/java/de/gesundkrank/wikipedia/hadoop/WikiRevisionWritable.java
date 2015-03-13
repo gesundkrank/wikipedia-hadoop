@@ -18,6 +18,7 @@
 
 package de.gesundkrank.wikipedia.hadoop;
 
+import com.google.common.base.Strings;
 import org.apache.hadoop.io.WritableComparable;
 import org.wikiclean.WikiClean;
 import org.wikiclean.WikiCleanBuilder;
@@ -84,7 +85,7 @@ public class WikiRevisionWritable implements WritableComparable<WikiRevisionWrit
     }
 
     public String getComment() {
-        return comment;
+        return Strings.nullToEmpty(comment);
     }
 
     public void setComment(String comment) {
@@ -92,7 +93,7 @@ public class WikiRevisionWritable implements WritableComparable<WikiRevisionWrit
     }
 
     public String getText() {
-        return text;
+        return Strings.nullToEmpty(text);
     }
 
     public String getPlainText(Locale locale) {
