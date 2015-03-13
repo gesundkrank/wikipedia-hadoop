@@ -1,8 +1,15 @@
-wikipedia-hadoop
+wikipedia-hadoop [![Build Status](https://jenkins.anycook.de/buildStatus/icon?job=wikipedia-hadoop)](https://jenkins.anycook.de/job/wikipedia-hadoop/)
 ================
 
-Wikipedia Inputformat and other useful Hadoop-related stuff
+Wikipedia Inputformat and some useful Wikipedia Hadoop utils.
 
-[![Build Status](https://jenkins.anycook.de/buildStatus/icon?job=wikipedia-hadoop)](https://jenkins.anycook.de/job/wikipedia-hadoop/)
+## Usage
 
-more coming soon...
+At first you have to set the ```WikiInputFormat``` as your job InputFormat: 
+
+```Java
+job.setInputFormatClass(WikiInputFormat.class);
+```
+
+Your Mappers incoming Key and Value need to be from the types ```LongWritable``` and ```WikiRevisionWritable```.
+
